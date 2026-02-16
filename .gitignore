@@ -1,0 +1,10 @@
+.claude/
+build/
+app/build/
+nostr-ig-app/
+figma/
+.kotlin/
+.gradle/
+keystore.properties
+*.keystore
+thoughts/

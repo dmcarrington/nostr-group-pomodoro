@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">TimeTribe</string>
+    <string name="timer_notification_channel">Timer</string>
+    <string name="timer_notification_channel_desc">Pomodoro timer notifications</string>
+</resources>
