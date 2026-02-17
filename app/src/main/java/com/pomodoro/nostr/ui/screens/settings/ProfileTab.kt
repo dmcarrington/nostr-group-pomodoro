@@ -6,6 +6,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +25,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
@@ -64,6 +66,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.pomodoro.nostr.ui.components.QrCodeDialog
+import com.pomodoro.nostr.ui.components.UserAvatar
 import com.pomodoro.nostr.ui.theme.NeonCyan
 import com.pomodoro.nostr.ui.theme.NeonMagenta
 import com.pomodoro.nostr.viewmodel.ProfileViewModel
@@ -93,6 +96,44 @@ fun ProfileTab(
             }
         } else {
             viewModel.clearAmberSigningRequest()
+        }
+    }
+
+    // Photo picker launcher
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        uri?.let { viewModel.uploadProfilePicture(context, it) }
+    }
+
+    // Blossom Amber signing launcher
+    val blossomAmberLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val signedEvent = result.data?.getStringExtra("event")
+                ?: result.data?.getStringExtra("signature")
+                ?: result.data?.getStringExtra("result")
+            if (signedEvent != null) {
+                viewModel.handleBlossomAmberSignedEvent(signedEvent)
+            } else {
+                viewModel.clearBlossomAmberIntent()
+                Toast.makeText(context, "Upload signing cancelled", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            viewModel.clearBlossomAmberIntent()
+        }
+    }
+
+    // Launch Amber for Blossom upload signing
+    LaunchedEffect(uiState.pendingBlossomAmberIntent) {
+        uiState.pendingBlossomAmberIntent?.let { intent ->
+            try {
+                blossomAmberLauncher.launch(intent)
+            } catch (e: Exception) {
+                Toast.makeText(context, "Failed to launch Amber: ${e.message}", Toast.LENGTH_LONG).show()
+                viewModel.clearBlossomAmberIntent()
+            }
         }
     }
 
@@ -146,6 +187,26 @@ fun ProfileTab(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
+            // Profile picture at top
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                UserAvatar(
+                    imageUrl = uiState.picture.takeIf { it.isNotBlank() },
+                    size = 100.dp,
+                    modifier = Modifier.clickable {
+                        photoPickerLauncher.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             // Identity section
             SectionHeader("YOUR IDENTITY")
 
@@ -206,13 +267,42 @@ fun ProfileTab(
 
             SectionHeader("IMAGES")
 
-            ProfileTextField(
-                value = uiState.picture,
-                onValueChange = { viewModel.updatePicture(it) },
-                label = "Profile Picture URL",
-                placeholder = "https://example.com/avatar.jpg",
-                leadingIcon = Icons.Default.AccountCircle
-            )
+            // Picture URL field with upload button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                ProfileTextField(
+                    value = uiState.picture,
+                    onValueChange = { viewModel.updatePicture(it) },
+                    label = "Profile Picture URL",
+                    placeholder = "https://example.com/avatar.jpg",
+                    leadingIcon = Icons.Default.AccountCircle,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(
+                    onClick = {
+                        photoPickerLauncher.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    },
+                    enabled = !uiState.isUploadingPicture
+                ) {
+                    if (uiState.isUploadingPicture) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = NeonCyan
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.AddAPhoto,
+                            contentDescription = "Upload picture",
+                            tint = NeonCyan
+                        )
+                    }
+                }
+            }
             ProfileTextField(
                 value = uiState.banner,
                 onValueChange = { viewModel.updateBanner(it) },

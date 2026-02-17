@@ -60,6 +60,7 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.pomodoro.nostr.timer.TimerPhase
 import com.pomodoro.nostr.timer.formatTime
+import com.pomodoro.nostr.ui.components.UserAvatar
 import com.pomodoro.nostr.ui.theme.NeonCyan
 import com.pomodoro.nostr.ui.theme.NeonGreen
 import com.pomodoro.nostr.ui.theme.NeonMagenta
@@ -72,7 +73,13 @@ fun TimerScreen(
     viewModel: TimerViewModel = hiltViewModel()
 ) {
     val state by viewModel.timerState.collectAsState()
+    val profilePictureUrl by viewModel.profilePictureUrl.collectAsState()
     val context = LocalContext.current
+
+    // Refresh profile picture when screen is (re)composed (e.g. returning from settings)
+    LaunchedEffect(Unit) {
+        viewModel.refreshProfilePicture()
+    }
 
     // Request notification permission on Android 13+
     val notificationLauncher = rememberLauncherForActivityResult(
@@ -122,13 +129,26 @@ fun TimerScreen(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End
         ) {
-            IconButton(
-                onClick = onSettingsClick,
-                colors = IconButtonDefaults.iconButtonColors(
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            ) {
-                Icon(Icons.Default.Settings, contentDescription = "Settings")
+            if (profilePictureUrl != null) {
+                IconButton(
+                    onClick = onSettingsClick,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    UserAvatar(
+                        imageUrl = profilePictureUrl,
+                        size = 32.dp,
+                        contentDescription = "Settings"
+                    )
+                }
+            } else {
+                IconButton(
+                    onClick = onSettingsClick,
+                    colors = IconButtonDefaults.iconButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                ) {
+                    Icon(Icons.Default.Settings, contentDescription = "Settings")
+                }
             }
         }
 

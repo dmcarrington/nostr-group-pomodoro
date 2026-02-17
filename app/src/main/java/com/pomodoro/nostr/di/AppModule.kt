@@ -1,6 +1,7 @@
 package com.pomodoro.nostr.di
 
 import android.content.Context
+import com.pomodoro.nostr.nostr.BlossomClient
 import com.pomodoro.nostr.nostr.ContactsManager
 import com.pomodoro.nostr.nostr.KeyManager
 import com.pomodoro.nostr.nostr.MetadataCache
@@ -86,5 +87,13 @@ object AppModule {
     @Singleton
     fun provideRankingService(): RankingService {
         return RankingService()
+    }
+
+    @Provides
+    @Singleton
+    fun provideBlossomClient(
+        keyManager: KeyManager
+    ): BlossomClient {
+        return BlossomClient(keyManager)
     }
 }

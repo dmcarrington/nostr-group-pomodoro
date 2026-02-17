@@ -4,7 +4,11 @@ import android.content.Context
 import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.pomodoro.nostr.nostr.KeyManager
+import com.pomodoro.nostr.nostr.MetadataCache
+import com.pomodoro.nostr.nostr.NostrClient
 import com.pomodoro.nostr.nostr.SessionPublisher
+import com.pomodoro.nostr.nostr.models.UserMetadata
 import com.pomodoro.nostr.timer.DEFAULT_PRESETS
 import com.pomodoro.nostr.timer.PomodoroPreset
 import com.pomodoro.nostr.timer.TimerPhase
@@ -16,14 +20,22 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import rust.nostr.protocol.Filter
+import rust.nostr.protocol.Kind
+import rust.nostr.protocol.PublicKey
 import javax.inject.Inject
 
 @HiltViewModel
 class TimerViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val timerPreferences: TimerPreferences,
-    private val sessionPublisher: SessionPublisher
+    private val sessionPublisher: SessionPublisher,
+    private val keyManager: KeyManager,
+    private val metadataCache: MetadataCache,
+    private val nostrClient: NostrClient
 ) : ViewModel() {
 
     val timerState: StateFlow<TimerState> = TimerService.timerState
@@ -33,7 +45,13 @@ class TimerViewModel @Inject constructor(
     private val _pendingAmberSessionSign = MutableStateFlow<Intent?>(null)
     val pendingAmberSessionSign: StateFlow<Intent?> = _pendingAmberSessionSign.asStateFlow()
 
+    private val _profilePictureUrl = MutableStateFlow<String?>(null)
+    val profilePictureUrl: StateFlow<String?> = _profilePictureUrl.asStateFlow()
+
     init {
+        refreshProfilePicture()
+        observeMetadataUpdates()
+        fetchMyMetadata()
         val preset = timerPreferences.getActivePreset()
         TimerService.initPreset(context, preset)
 
@@ -50,6 +68,65 @@ class TimerViewModel @Inject constructor(
                             sessionPublisher.createAmberSignIntent(unsignedEvent)
                     }
                 }
+            }
+        }
+    }
+
+    fun refreshProfilePicture() {
+        val pubkey = keyManager.getPublicKeyHex() ?: return
+        val metadata = metadataCache.get(pubkey)
+        _profilePictureUrl.value = metadata?.picture
+    }
+
+    private fun observeMetadataUpdates() {
+        val pubkey = keyManager.getPublicKeyHex() ?: return
+        viewModelScope.launch {
+            metadataCache.updates.collect { metadata ->
+                if (metadata.pubkey == pubkey) {
+                    _profilePictureUrl.value = metadata.picture
+                }
+            }
+        }
+    }
+
+    private fun fetchMyMetadata() {
+        val pubkeyHex = keyManager.getPublicKeyHex() ?: return
+
+        viewModelScope.launch {
+            try {
+                // Wait for relay connection
+                withTimeoutOrNull(8000L) {
+                    nostrClient.connectionState.first { it == NostrClient.ConnectionState.Connected }
+                } ?: return@launch
+
+                val filter = Filter()
+                    .kind(Kind(0u))
+                    .author(PublicKey.fromHex(pubkeyHex))
+                    .limit(1u)
+
+                val subscriptionId = "my_metadata"
+                nostrClient.subscribe(subscriptionId, listOf(filter))
+
+                // Wait for the event to arrive, then cache it
+                val result = withTimeoutOrNull(5000L) {
+                    nostrClient.events.first { nostrEvent ->
+                        nostrEvent.subscriptionId == subscriptionId &&
+                            nostrEvent.event.kind().asU16().toInt() == 0
+                    }
+                }
+
+                nostrClient.unsubscribe(subscriptionId)
+
+                if (result != null) {
+                    val metadata = UserMetadata.fromJson(
+                        pubkey = result.event.author().toHex(),
+                        json = result.event.content(),
+                        createdAt = result.event.createdAt().asSecs().toLong()
+                    )
+                    metadataCache.put(metadata)
+                }
+            } catch (_: Exception) {
+                // Non-critical — profile picture just won't show until settings visited
             }
         }
     }

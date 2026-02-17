@@ -1,8 +1,11 @@
 package com.pomodoro.nostr.viewmodel
 
+import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.pomodoro.nostr.nostr.BlossomClient
 import com.pomodoro.nostr.nostr.KeyManager
 import com.pomodoro.nostr.nostr.MetadataCache
 import com.pomodoro.nostr.nostr.NostrClient
@@ -47,6 +50,8 @@ data class ProfileUiState(
     val nip05: String = "",
     val lud16: String = "",
     val website: String = "",
+    val isUploadingPicture: Boolean = false,
+    val pendingBlossomAmberIntent: Intent? = null,
     val needsAmberSigning: Intent? = null,
     val npub: String? = null,
     val relays: List<RelayInfo> = emptyList(),
@@ -57,7 +62,8 @@ data class ProfileUiState(
 class ProfileViewModel @Inject constructor(
     private val keyManager: KeyManager,
     private val nostrClient: NostrClient,
-    private val metadataCache: MetadataCache
+    private val metadataCache: MetadataCache,
+    private val blossomClient: BlossomClient
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
@@ -65,6 +71,9 @@ class ProfileViewModel @Inject constructor(
 
     // Store original values for change detection
     private var originalMetadata: UserMetadata? = null
+
+    // Pending Blossom upload for Amber signing flow
+    private var pendingPreparedUpload: BlossomClient.PreparedUpload? = null
 
     init {
         _uiState.update { it.copy(npub = keyManager.getNpub()) }
@@ -207,6 +216,74 @@ class ProfileViewModel @Inject constructor(
     fun updateWebsite(value: String) {
         _uiState.update { it.copy(website = value) }
         checkForChanges()
+    }
+
+    fun uploadProfilePicture(context: Context, uri: Uri) {
+        _uiState.update { it.copy(isUploadingPicture = true) }
+
+        viewModelScope.launch {
+            try {
+                if (keyManager.isAmberConnected()) {
+                    // Amber flow: prepare upload, then request signing
+                    val prepared = blossomClient.prepareUpload(context, uri).getOrThrow()
+                    pendingPreparedUpload = prepared
+
+                    val intent = keyManager.createAmberSignEventIntent(
+                        eventJson = prepared.unsignedAuthEvent,
+                        eventId = "blossom_upload"
+                    )
+                    _uiState.update { it.copy(pendingBlossomAmberIntent = intent) }
+                } else {
+                    // Local keys flow: upload directly
+                    val result = blossomClient.uploadImage(context, uri).getOrThrow()
+                    _uiState.update {
+                        it.copy(
+                            picture = result.url,
+                            isUploadingPicture = false
+                        )
+                    }
+                    checkForChanges()
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isUploadingPicture = false,
+                        error = "Upload failed: ${e.message}"
+                    )
+                }
+            }
+        }
+    }
+
+    fun handleBlossomAmberSignedEvent(signedEventJson: String) {
+        val prepared = pendingPreparedUpload ?: return
+        pendingPreparedUpload = null
+        _uiState.update { it.copy(pendingBlossomAmberIntent = null) }
+
+        viewModelScope.launch {
+            try {
+                val result = blossomClient.uploadWithSignedAuth(prepared, signedEventJson).getOrThrow()
+                _uiState.update {
+                    it.copy(
+                        picture = result.url,
+                        isUploadingPicture = false
+                    )
+                }
+                checkForChanges()
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isUploadingPicture = false,
+                        error = "Upload failed: ${e.message}"
+                    )
+                }
+            }
+        }
+    }
+
+    fun clearBlossomAmberIntent() {
+        pendingPreparedUpload = null
+        _uiState.update { it.copy(pendingBlossomAmberIntent = null, isUploadingPicture = false) }
     }
 
     fun saveProfile() {
