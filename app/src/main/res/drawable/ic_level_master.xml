@@ -1,0 +1,201 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+
+    <!-- Background circle with triple ring -->
+    <path
+        android:pathData="M48,4 A44,44 0 1,1 47.99,4"
+        android:fillColor="#0A0A1A"
+        android:strokeColor="#FF006E"
+        android:strokeWidth="1.5"/>
+    <path
+        android:pathData="M48,8 A40,40 0 1,1 47.99,8"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FF006E"
+        android:strokeWidth="0.5"
+        android:strokeAlpha="0.5"/>
+    <path
+        android:pathData="M48,12 A36,36 0 1,1 47.99,12"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FF006E"
+        android:strokeWidth="0.3"
+        android:strokeAlpha="0.3"/>
+
+    <!-- Energy halo / crown -->
+    <path
+        android:pathData="M32,18 L38,10 L44,16 L48,8 L52,16 L58,10 L64,18"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FF006E"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"/>
+
+    <!-- Crown tips glow -->
+    <path
+        android:pathData="M38,10 A1.5,1.5 0 1,1 37.99,10"
+        android:fillColor="#FF006E"/>
+    <path
+        android:pathData="M48,8 A2,2 0 1,1 47.99,8"
+        android:fillColor="#FF006E"/>
+    <path
+        android:pathData="M58,10 A1.5,1.5 0 1,1 57.99,10"
+        android:fillColor="#FF006E"/>
+
+    <!-- Head - full cyberpunk helmet -->
+    <path
+        android:pathData="M32,26 L48,18 L64,26 L64,42 L48,48 L32,42 Z"
+        android:fillColor="#1A1A3E"
+        android:strokeColor="#FF006E"
+        android:strokeWidth="1.2"/>
+
+    <!-- Visor - full width with multi-color -->
+    <path
+        android:pathData="M36,30 L60,30 L58,38 L38,38 Z"
+        android:fillColor="#FF006E"
+        android:fillAlpha="0.25"
+        android:strokeColor="#FF006E"
+        android:strokeWidth="1"/>
+
+    <!-- Visor triple scan lines -->
+    <path
+        android:pathData="M38,32 L58,32"
+        android:strokeColor="#FF006E"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round"/>
+    <path
+        android:pathData="M39,34.5 L57,34.5"
+        android:strokeColor="#BD00FF"
+        android:strokeWidth="0.8"
+        android:strokeLineCap="round"
+        android:strokeAlpha="0.7"/>
+    <path
+        android:pathData="M40,37 L56,37"
+        android:strokeColor="#00F5FF"
+        android:strokeWidth="0.6"
+        android:strokeLineCap="round"
+        android:strokeAlpha="0.5"/>
+
+    <!-- Body - detailed angular torso -->
+    <path
+        android:pathData="M28,48 L36,44 L48,46 L60,44 L68,48 L70,70 L26,70 Z"
+        android:fillColor="#1A1A3E"
+        android:strokeColor="#FF006E"
+        android:strokeWidth="1"/>
+
+    <!-- Chest core - hexagon -->
+    <path
+        android:pathData="M48,50 L54,53 L54,59 L48,62 L42,59 L42,53 Z"
+        android:fillColor="#FF006E"
+        android:fillAlpha="0.15"
+        android:strokeColor="#FF006E"
+        android:strokeWidth="0.8"/>
+
+    <!-- Chest core - inner glow -->
+    <path
+        android:pathData="M48,52 L51,54 L51,58 L48,60 L45,58 L45,54 Z"
+        android:fillColor="#FF006E"
+        android:fillAlpha="0.3"
+        android:strokeColor="#FF006E"
+        android:strokeWidth="0.5"/>
+
+    <!-- Radiating circuit lines from chest -->
+    <path
+        android:pathData="M42,53 L36,50"
+        android:strokeColor="#FF006E"
+        android:strokeWidth="0.6"
+        android:strokeAlpha="0.6"/>
+    <path
+        android:pathData="M54,53 L60,50"
+        android:strokeColor="#FF006E"
+        android:strokeWidth="0.6"
+        android:strokeAlpha="0.6"/>
+    <path
+        android:pathData="M42,59 L34,62"
+        android:strokeColor="#FF006E"
+        android:strokeWidth="0.6"
+        android:strokeAlpha="0.6"/>
+    <path
+        android:pathData="M54,59 L62,62"
+        android:strokeColor="#FF006E"
+        android:strokeWidth="0.6"
+        android:strokeAlpha="0.6"/>
+    <path
+        android:pathData="M48,62 L48,67"
+        android:strokeColor="#FF006E"
+        android:strokeWidth="0.6"
+        android:strokeAlpha="0.6"/>
+
+    <!-- Circuit nodes -->
+    <path
+        android:pathData="M36,50 A1.5,1.5 0 1,1 35.99,50"
+        android:fillColor="#FF006E"
+        android:fillAlpha="0.7"/>
+    <path
+        android:pathData="M60,50 A1.5,1.5 0 1,1 59.99,50"
+        android:fillColor="#FF006E"
+        android:fillAlpha="0.7"/>
+    <path
+        android:pathData="M34,62 A1.5,1.5 0 1,1 33.99,62"
+        android:fillColor="#FF006E"
+        android:fillAlpha="0.7"/>
+    <path
+        android:pathData="M62,62 A1.5,1.5 0 1,1 61.99,62"
+        android:fillColor="#FF006E"
+        android:fillAlpha="0.7"/>
+
+    <!-- Enhanced shoulder pads with glow -->
+    <path
+        android:pathData="M22,50 L32,44 L32,56 Z"
+        android:fillColor="#FF006E"
+        android:fillAlpha="0.2"
+        android:strokeColor="#FF006E"
+        android:strokeWidth="0.8"/>
+    <path
+        android:pathData="M74,50 L64,44 L64,56 Z"
+        android:fillColor="#FF006E"
+        android:fillAlpha="0.2"
+        android:strokeColor="#FF006E"
+        android:strokeWidth="0.8"/>
+
+    <!-- Arm energy lines -->
+    <path
+        android:pathData="M28,52 L20,60"
+        android:strokeColor="#FF006E"
+        android:strokeWidth="0.8"
+        android:strokeAlpha="0.5"/>
+    <path
+        android:pathData="M68,52 L76,60"
+        android:strokeColor="#FF006E"
+        android:strokeWidth="0.8"
+        android:strokeAlpha="0.5"/>
+    <path
+        android:pathData="M20,60 A2,2 0 1,1 19.99,60"
+        android:fillColor="#FF006E"
+        android:fillAlpha="0.5"/>
+    <path
+        android:pathData="M76,60 A2,2 0 1,1 75.99,60"
+        android:fillColor="#FF006E"
+        android:fillAlpha="0.5"/>
+
+    <!-- Base platform with energy -->
+    <path
+        android:pathData="M22,70 L74,70 L78,78 L18,78 Z"
+        android:fillColor="#1A1A3E"
+        android:strokeColor="#FF006E"
+        android:strokeWidth="0.8"/>
+
+    <!-- Base energy lines -->
+    <path
+        android:pathData="M28,74 L68,74"
+        android:strokeColor="#FF006E"
+        android:strokeWidth="0.5"
+        android:strokeAlpha="0.5"/>
+    <path
+        android:pathData="M34,77 L62,77"
+        android:strokeColor="#FF006E"
+        android:strokeWidth="0.3"
+        android:strokeAlpha="0.3"/>
+
+</vector>

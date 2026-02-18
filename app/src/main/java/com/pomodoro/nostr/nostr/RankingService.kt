@@ -18,7 +18,8 @@ import javax.inject.Singleton
 
 data class RankingEntry(
     val pubkeyHex: String,
-    val sessionCount: Int
+    val sessionCount: Int,
+    val level: PomodoroLevel? = null
 )
 
 data class Rankings(
@@ -55,6 +56,7 @@ class RankingService @Inject constructor() {
         val dailyCounts = mutableMapOf<String, Int>()
         val weeklyCounts = mutableMapOf<String, Int>()
         val monthlyCounts = mutableMapOf<String, Int>()
+        val latestLevel = mutableMapOf<String, Pair<Long, PomodoroLevel>>()
 
         pubkeys.forEach { pk ->
             dailyCounts[pk] = 0
@@ -62,7 +64,7 @@ class RankingService @Inject constructor() {
             monthlyCounts[pk] = 0
         }
 
-        events.forEach { (pubkey, timestamp) ->
+        events.forEach { (pubkey, timestamp, levelTag) ->
             monthlyCounts[pubkey] = (monthlyCounts[pubkey] ?: 0) + 1
             if (timestamp >= oneWeekAgo) {
                 weeklyCounts[pubkey] = (weeklyCounts[pubkey] ?: 0) + 1
@@ -70,14 +72,20 @@ class RankingService @Inject constructor() {
             if (timestamp >= oneDayAgo) {
                 dailyCounts[pubkey] = (dailyCounts[pubkey] ?: 0) + 1
             }
+            if (levelTag != null) {
+                val current = latestLevel[pubkey]
+                if (current == null || timestamp > current.first) {
+                    latestLevel[pubkey] = timestamp to PomodoroLevel.fromTag(levelTag)
+                }
+            }
         }
 
         Rankings(
-            daily = dailyCounts.map { RankingEntry(it.key, it.value) }
+            daily = dailyCounts.map { RankingEntry(it.key, it.value, latestLevel[it.key]?.second) }
                 .sortedByDescending { it.sessionCount },
-            weekly = weeklyCounts.map { RankingEntry(it.key, it.value) }
+            weekly = weeklyCounts.map { RankingEntry(it.key, it.value, latestLevel[it.key]?.second) }
                 .sortedByDescending { it.sessionCount },
-            monthly = monthlyCounts.map { RankingEntry(it.key, it.value) }
+            monthly = monthlyCounts.map { RankingEntry(it.key, it.value, latestLevel[it.key]?.second) }
                 .sortedByDescending { it.sessionCount }
         )
     }
@@ -85,8 +93,8 @@ class RankingService @Inject constructor() {
     private suspend fun fetchSessionEvents(
         pubkeys: List<String>,
         sinceTimestamp: Long
-    ): List<Pair<String, Long>> {
-        val allResults = mutableListOf<Pair<String, Long>>()
+    ): List<Triple<String, Long, String?>> {
+        val allResults = mutableListOf<Triple<String, Long, String?>>()
 
         for (relayUrl in relays) {
             try {
@@ -107,8 +115,8 @@ class RankingService @Inject constructor() {
         relayUrl: String,
         pubkeys: List<String>,
         sinceTimestamp: Long
-    ): List<Pair<String, Long>> {
-        val results = mutableListOf<Pair<String, Long>>()
+    ): List<Triple<String, Long, String?>> {
+        val results = mutableListOf<Triple<String, Long, String?>>()
         val completed = CompletableDeferred<Unit>()
         val subscriptionId = "ranking_${System.currentTimeMillis()}"
 
@@ -137,12 +145,27 @@ class RankingService @Inject constructor() {
                     val json = JSONArray(text)
                     when (json.getString(0)) {
                         "EVENT" -> {
-                            val eventJson = json.getJSONObject(2).toString()
+                            val eventJsonObj = json.getJSONObject(2)
+                            val eventJson = eventJsonObj.toString()
                             val event = Event.fromJson(eventJson)
                             val pubkey = event.author().toHex()
                             val timestamp = event.createdAt().asSecs().toLong()
+
+                            // Parse level tag from event
+                            val levelTag = try {
+                                val tags = eventJsonObj.getJSONArray("tags")
+                                var found: String? = null
+                                for (i in 0 until tags.length()) {
+                                    val tag = tags.getJSONArray(i)
+                                    if (tag.length() >= 2 && tag.getString(0) == "level") {
+                                        found = tag.getString(1)
+                                    }
+                                }
+                                found
+                            } catch (_: Exception) { null }
+
                             synchronized(results) {
-                                results.add(pubkey to timestamp)
+                                results.add(Triple(pubkey, timestamp, levelTag))
                             }
                         }
                         "EOSE" -> completed.complete(Unit)

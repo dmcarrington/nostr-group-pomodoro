@@ -16,7 +16,8 @@ import javax.inject.Singleton
 @Singleton
 class SessionPublisher @Inject constructor(
     private val keyManager: KeyManager,
-    private val nostrClient: NostrClient
+    private val nostrClient: NostrClient,
+    private val levelCalculator: LevelCalculator
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -25,11 +26,12 @@ class SessionPublisher @Inject constructor(
      * Returns unsigned event JSON if Amber signing is needed, null if published locally.
      */
     fun publishSession(durationMinutes: Int): String? {
+        val level = levelCalculator.calculateCurrentLevel().tag
         if (keyManager.isAmberConnected()) {
-            return createUnsignedSessionEvent(durationMinutes)
+            return createUnsignedSessionEvent(durationMinutes, level)
         } else {
             val keys = keyManager.getKeys() ?: return null
-            val tags = SessionEvents.createSessionTags(durationMinutes).map { tagParts ->
+            val tags = SessionEvents.createSessionTags(durationMinutes, level).map { tagParts ->
                 Tag.parse(tagParts)
             }
             val event = EventBuilder(
@@ -59,12 +61,13 @@ class SessionPublisher @Inject constructor(
         }
     }
 
-    private fun createUnsignedSessionEvent(durationMinutes: Int): String {
+    private fun createUnsignedSessionEvent(durationMinutes: Int, level: String): String {
         val pubkey = keyManager.getPublicKeyHex() ?: ""
         val createdAt = System.currentTimeMillis() / 1000
         val tags = JSONArray().apply {
             put(JSONArray().apply { put("t"); put("pomodoro") })
             put(JSONArray().apply { put("duration"); put(durationMinutes.toString()) })
+            put(JSONArray().apply { put("level"); put(level) })
         }
         return JSONObject().apply {
             put("kind", SessionEvents.KIND_POMODORO_SESSION.toInt())

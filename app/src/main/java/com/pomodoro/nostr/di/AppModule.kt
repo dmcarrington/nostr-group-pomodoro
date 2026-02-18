@@ -3,7 +3,9 @@ package com.pomodoro.nostr.di
 import android.content.Context
 import com.pomodoro.nostr.nostr.BlossomClient
 import com.pomodoro.nostr.nostr.ContactsManager
+import com.pomodoro.nostr.nostr.FriendSignalService
 import com.pomodoro.nostr.nostr.KeyManager
+import com.pomodoro.nostr.nostr.LevelCalculator
 import com.pomodoro.nostr.nostr.MetadataCache
 import com.pomodoro.nostr.nostr.NostrClient
 import com.pomodoro.nostr.nostr.RankingService
@@ -76,11 +78,30 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideLevelCalculator(
+        @ApplicationContext context: Context,
+        sessionHistory: SessionHistory
+    ): LevelCalculator {
+        return LevelCalculator(sessionHistory).apply { init(context) }
+    }
+
+    @Provides
+    @Singleton
     fun provideSessionPublisher(
         keyManager: KeyManager,
-        nostrClient: NostrClient
+        nostrClient: NostrClient,
+        levelCalculator: LevelCalculator
     ): SessionPublisher {
-        return SessionPublisher(keyManager, nostrClient)
+        return SessionPublisher(keyManager, nostrClient, levelCalculator)
+    }
+
+    @Provides
+    @Singleton
+    fun provideFriendSignalService(
+        keyManager: KeyManager,
+        nostrClient: NostrClient
+    ): FriendSignalService {
+        return FriendSignalService(keyManager, nostrClient)
     }
 
     @Provides

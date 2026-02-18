@@ -23,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -46,6 +47,10 @@ fun ContactsTab(
     viewModel: ContactsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.refreshInboundFriendSignals()
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -172,6 +177,7 @@ fun ContactsTab(
                     pubkeyHex = contact.pubkeyHex,
                     rank = monthlyRank,
                     sessionCount = monthlyCount,
+                    level = contact.level,
                     onRemove = { viewModel.removeContact(contact.pubkeyHex) }
                 )
             }

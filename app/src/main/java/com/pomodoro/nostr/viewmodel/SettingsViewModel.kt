@@ -3,7 +3,9 @@ package com.pomodoro.nostr.viewmodel
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import com.pomodoro.nostr.nostr.KeyManager
+import com.pomodoro.nostr.nostr.LevelCalculator
 import com.pomodoro.nostr.nostr.NostrClient
+import com.pomodoro.nostr.nostr.PomodoroLevel
 import com.pomodoro.nostr.timer.DEFAULT_PRESETS
 import com.pomodoro.nostr.timer.PomodoroPreset
 import com.pomodoro.nostr.timer.SessionHistory
@@ -23,7 +25,8 @@ class SettingsViewModel @Inject constructor(
     private val keyManager: KeyManager,
     private val nostrClient: NostrClient,
     private val timerPreferences: TimerPreferences,
-    private val sessionHistory: SessionHistory
+    private val sessionHistory: SessionHistory,
+    private val levelCalculator: LevelCalculator
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -54,7 +57,9 @@ class SettingsViewModel @Inject constructor(
             todayCount = sessionHistory.getTodayCount(),
             weekCount = sessionHistory.getWeekCount(),
             monthCount = sessionHistory.getMonthCount(),
-            activityData = sessionHistory.getDailySessionCounts(26)
+            activityData = sessionHistory.getDailySessionCounts(26),
+            level = levelCalculator.calculateCurrentLevel(),
+            sevenDayAverage = levelCalculator.calculateSevenDayAverage()
         )
     }
 
@@ -63,7 +68,9 @@ class SettingsViewModel @Inject constructor(
             todayCount = sessionHistory.getTodayCount(),
             weekCount = sessionHistory.getWeekCount(),
             monthCount = sessionHistory.getMonthCount(),
-            activityData = sessionHistory.getDailySessionCounts(26)
+            activityData = sessionHistory.getDailySessionCounts(26),
+            level = levelCalculator.calculateCurrentLevel(),
+            sevenDayAverage = levelCalculator.calculateSevenDayAverage()
         )
     }
 
@@ -131,5 +138,7 @@ data class SettingsUiState(
     val todayCount: Int = 0,
     val weekCount: Int = 0,
     val monthCount: Int = 0,
-    val activityData: Map<LocalDate, Int> = emptyMap()
+    val activityData: Map<LocalDate, Int> = emptyMap(),
+    val level: PomodoroLevel = PomodoroLevel.BEGINNER,
+    val sevenDayAverage: Double = 0.0
 )

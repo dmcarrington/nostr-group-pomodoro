@@ -3,8 +3,10 @@ package com.pomodoro.nostr.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pomodoro.nostr.nostr.ContactsManager
+import com.pomodoro.nostr.nostr.FriendSignalService
 import com.pomodoro.nostr.nostr.KeyManager
 import com.pomodoro.nostr.nostr.MetadataCache
+import com.pomodoro.nostr.nostr.PomodoroLevel
 import com.pomodoro.nostr.nostr.RankingService
 import com.pomodoro.nostr.nostr.Rankings
 import com.pomodoro.nostr.nostr.SearchService
@@ -22,7 +24,8 @@ import javax.inject.Inject
 
 data class ContactWithMetadata(
     val pubkeyHex: String,
-    val metadata: UserMetadata?
+    val metadata: UserMetadata?,
+    val level: PomodoroLevel? = null
 )
 
 data class ContactsUiState(
@@ -54,7 +57,8 @@ class ContactsViewModel @Inject constructor(
     private val searchService: SearchService,
     private val rankingService: RankingService,
     private val metadataCache: MetadataCache,
-    private val keyManager: KeyManager
+    private val keyManager: KeyManager,
+    private val friendSignalService: FriendSignalService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ContactsUiState())
@@ -72,6 +76,19 @@ class ContactsViewModel @Inject constructor(
                 refreshRankings(pubkeys)
             }
         }
+
+        // Fetch inbound friend signals and auto-add
+        viewModelScope.launch {
+            try {
+                val inboundPubkeys = friendSignalService.fetchInboundFriendSignals()
+                val myPubkey = keyManager.getPublicKeyHex()
+                for (pubkey in inboundPubkeys) {
+                    if (pubkey != myPubkey && !contactsManager.isContact(pubkey)) {
+                        contactsManager.addContact(pubkey)
+                    }
+                }
+            } catch (_: Exception) {}
+        }
     }
 
     private fun loadContactsMetadata(pubkeys: Set<String>) {
@@ -80,9 +97,10 @@ class ContactsViewModel @Inject constructor(
             return
         }
 
-        // Show immediately from cache
+        // Show immediately from cache, preserving existing levels
+        val existingLevels = _uiState.value.contacts.associate { it.pubkeyHex to it.level }
         val cachedContacts = pubkeys.map { pk ->
-            ContactWithMetadata(pk, metadataCache.get(pk))
+            ContactWithMetadata(pk, metadataCache.get(pk), existingLevels[pk])
         }
         _uiState.update { it.copy(contacts = cachedContacts, isLoadingContacts = true) }
 
@@ -93,9 +111,10 @@ class ContactsViewModel @Inject constructor(
                 if (uncached.isNotEmpty()) {
                     searchService.fetchMetadataForPubkeys(uncached)
                 }
-                // Rebuild from cache
+                // Rebuild from cache, preserving existing levels
+                val currentLevels = _uiState.value.contacts.associate { it.pubkeyHex to it.level }
                 val updatedContacts = pubkeys.map { pk ->
-                    ContactWithMetadata(pk, metadataCache.get(pk))
+                    ContactWithMetadata(pk, metadataCache.get(pk), currentLevels[pk])
                 }
                 _uiState.update { it.copy(contacts = updatedContacts, isLoadingContacts = false) }
             } catch (_: Exception) {
@@ -120,8 +139,15 @@ class ContactsViewModel @Inject constructor(
                 val myWeeklyCount = rankings.weekly.find { it.pubkeyHex == myPubkey }?.sessionCount ?: 0
                 val myMonthlyCount = rankings.monthly.find { it.pubkeyHex == myPubkey }?.sessionCount ?: 0
 
+                // Attach levels from rankings to contacts
+                val updatedContacts = _uiState.value.contacts.map { contact ->
+                    val level = rankings.monthly.find { it.pubkeyHex == contact.pubkeyHex }?.level
+                    if (level != null) contact.copy(level = level) else contact
+                }
+
                 _uiState.update {
                     it.copy(
+                        contacts = updatedContacts,
                         rankings = rankings,
                         isLoadingRankings = false,
                         myRankDaily = myDailyRank,
@@ -196,6 +222,7 @@ class ContactsViewModel @Inject constructor(
 
     fun addContactFromSearch(pubkeyHex: String) {
         contactsManager.addContact(pubkeyHex)
+        publishFriendSignal(pubkeyHex)
         _uiState.update { it.copy(showAddDialog = false) }
     }
 
@@ -231,10 +258,30 @@ class ContactsViewModel @Inject constructor(
             }
 
             contactsManager.addContact(pubkeyHex)
+            publishFriendSignal(pubkeyHex)
             _uiState.update { it.copy(showAddDialog = false, npubInput = "", addError = null) }
         } catch (e: Exception) {
             _uiState.update { it.copy(addError = "Invalid key: ${e.message}") }
         }
+    }
+
+    fun refreshInboundFriendSignals() {
+        viewModelScope.launch {
+            try {
+                val inboundPubkeys = friendSignalService.fetchInboundFriendSignals()
+                val myPubkey = keyManager.getPublicKeyHex()
+                for (pubkey in inboundPubkeys) {
+                    if (pubkey != myPubkey && !contactsManager.isContact(pubkey)) {
+                        contactsManager.addContact(pubkey)
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+    }
+
+    private fun publishFriendSignal(pubkeyHex: String) {
+        // Publish a friend-add signal so the other user's app auto-adds us
+        friendSignalService.publishFriendAdd(pubkeyHex)
     }
 
     fun removeContact(pubkeyHex: String) {

@@ -13,7 +13,9 @@ class PomodoroApp : Application() {
     }
 
     private fun createNotificationChannel() {
-        val channel = NotificationChannel(
+        val manager = getSystemService(NotificationManager::class.java)
+
+        val timerChannel = NotificationChannel(
             TIMER_CHANNEL_ID,
             getString(R.string.timer_notification_channel),
             NotificationManager.IMPORTANCE_LOW
@@ -21,12 +23,20 @@ class PomodoroApp : Application() {
             description = getString(R.string.timer_notification_channel_desc)
             setShowBadge(false)
         }
+        manager.createNotificationChannel(timerChannel)
 
-        val manager = getSystemService(NotificationManager::class.java)
-        manager.createNotificationChannel(channel)
+        val levelChannel = NotificationChannel(
+            LEVEL_CHANNEL_ID,
+            getString(R.string.level_notification_channel),
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = getString(R.string.level_notification_channel_desc)
+        }
+        manager.createNotificationChannel(levelChannel)
     }
 
     companion object {
         const val TIMER_CHANNEL_ID = "pomodoro_timer"
+        const val LEVEL_CHANNEL_ID = "pomodoro_level"
     }
 }

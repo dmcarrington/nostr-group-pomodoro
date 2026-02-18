@@ -2,4 +2,6 @@
     <string name="app_name">TimeTribe</string>
     <string name="timer_notification_channel">Timer</string>
     <string name="timer_notification_channel_desc">Pomodoro timer notifications</string>
+    <string name="level_notification_channel">Level Up</string>
+    <string name="level_notification_channel_desc">Notifications when you reach a new level</string>
 </resources>

@@ -1,0 +1,85 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+
+    <!-- Background circle -->
+    <path
+        android:pathData="M48,4 A44,44 0 1,1 47.99,4"
+        android:fillColor="#0A0A1A"
+        android:strokeColor="#00F5FF"
+        android:strokeWidth="1.5"/>
+
+    <!-- Head - simple geometric helmet -->
+    <path
+        android:pathData="M36,28 L48,20 L60,28 L60,42 L48,46 L36,42 Z"
+        android:fillColor="#1A1A3E"
+        android:strokeColor="#00F5FF"
+        android:strokeWidth="1.2"/>
+
+    <!-- Visor -->
+    <path
+        android:pathData="M40,32 L56,32 L54,38 L42,38 Z"
+        android:fillColor="#00F5FF"
+        android:fillAlpha="0.3"
+        android:strokeColor="#00F5FF"
+        android:strokeWidth="0.8"/>
+
+    <!-- Visor glow line -->
+    <path
+        android:pathData="M42,35 L54,35"
+        android:strokeColor="#00F5FF"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"/>
+
+    <!-- Body - simple angular torso -->
+    <path
+        android:pathData="M32,48 L40,44 L48,46 L56,44 L64,48 L66,68 L30,68 Z"
+        android:fillColor="#1A1A3E"
+        android:strokeColor="#00F5FF"
+        android:strokeWidth="1"/>
+
+    <!-- Chest circuit - simple vertical line -->
+    <path
+        android:pathData="M48,50 L48,62"
+        android:strokeColor="#00F5FF"
+        android:strokeWidth="0.8"
+        android:strokeAlpha="0.6"/>
+
+    <!-- Chest circuit - horizontal -->
+    <path
+        android:pathData="M42,56 L54,56"
+        android:strokeColor="#00F5FF"
+        android:strokeWidth="0.8"
+        android:strokeAlpha="0.6"/>
+
+    <!-- Shoulder pads -->
+    <path
+        android:pathData="M28,50 L36,46 L36,52 Z"
+        android:fillColor="#00F5FF"
+        android:fillAlpha="0.15"/>
+    <path
+        android:pathData="M68,50 L60,46 L60,52 Z"
+        android:fillColor="#00F5FF"
+        android:fillAlpha="0.15"/>
+
+    <!-- Small node dots -->
+    <path
+        android:pathData="M48,50 A1.5,1.5 0 1,1 47.99,50"
+        android:fillColor="#00F5FF"
+        android:fillAlpha="0.8"/>
+    <path
+        android:pathData="M48,62 A1.5,1.5 0 1,1 47.99,62"
+        android:fillColor="#00F5FF"
+        android:fillAlpha="0.8"/>
+
+    <!-- Base platform -->
+    <path
+        android:pathData="M26,68 L70,68 L74,76 L22,76 Z"
+        android:fillColor="#1A1A3E"
+        android:strokeColor="#00F5FF"
+        android:strokeWidth="0.8"
+        android:strokeAlpha="0.5"/>
+
+</vector>

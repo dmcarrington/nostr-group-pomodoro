@@ -10,6 +10,7 @@ import androidx.core.app.NotificationCompat
 import com.pomodoro.nostr.MainActivity
 import com.pomodoro.nostr.PomodoroApp
 import com.pomodoro.nostr.R
+import com.pomodoro.nostr.nostr.LevelCalculator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -25,11 +26,13 @@ class TimerService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var tickJob: Job? = null
     private lateinit var sessionHistory: SessionHistory
+    private lateinit var levelCalculator: LevelCalculator
 
     override fun onCreate() {
         super.onCreate()
         instance = this
         sessionHistory = SessionHistory(applicationContext)
+        levelCalculator = LevelCalculator(applicationContext)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -126,6 +129,7 @@ class TimerService : Service() {
             TimerPhase.WORK -> {
                 sessionHistory.recordSession()
                 _sessionCompleted.value = preset.workMinutes
+                checkAndNotifyLevelUp()
                 val newCompleted = state.completedSessions + 1
                 val isLongBreak = newCompleted % preset.sessionsBeforeLongBreak == 0
                 val breakMinutes = if (isLongBreak) preset.longBreakMinutes else preset.shortBreakMinutes
@@ -153,6 +157,26 @@ class TimerService : Service() {
         }
 
         updateNotification()
+    }
+
+    private fun checkAndNotifyLevelUp() {
+        val newLevel = levelCalculator.checkLevelUp() ?: return
+        try {
+            val contentIntent = PendingIntent.getActivity(
+                this, 0,
+                Intent(this, MainActivity::class.java),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            val notification = NotificationCompat.Builder(this, PomodoroApp.LEVEL_CHANNEL_ID)
+                .setContentTitle("Level Up!")
+                .setContentText("Congratulations, you are now a Pomodoro ${newLevel.displayName}")
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentIntent(contentIntent)
+                .setAutoCancel(true)
+                .build()
+            val manager = getSystemService(android.app.NotificationManager::class.java)
+            manager.notify(LEVEL_NOTIFICATION_ID, notification)
+        } catch (_: Exception) {}
     }
 
     private fun buildNotification(): Notification {
@@ -225,6 +249,7 @@ class TimerService : Service() {
         const val ACTION_RESET = "com.pomodoro.nostr.RESET"
         const val ACTION_SKIP = "com.pomodoro.nostr.SKIP"
         private const val NOTIFICATION_ID = 1
+        private const val LEVEL_NOTIFICATION_ID = 2
 
         private val _timerState = MutableStateFlow(TimerState())
         val timerState: StateFlow<TimerState> = _timerState.asStateFlow()
