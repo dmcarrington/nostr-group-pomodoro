@@ -37,6 +37,30 @@ class TimerPreferences @Inject constructor(
         get() = prefs.getBoolean("is_custom", false)
         set(value) = prefs.edit().putBoolean("is_custom", value).apply()
 
+    var dndEnabled: Boolean
+        get() = prefs.getBoolean("dnd_enabled", false)
+        set(value) = prefs.edit().putBoolean("dnd_enabled", value).apply()
+
+    var allowCalls: Boolean
+        get() = prefs.getBoolean("dnd_allow_calls", true)
+        set(value) = prefs.edit().putBoolean("dnd_allow_calls", value).apply()
+
+    var allowMessages: Boolean
+        get() = prefs.getBoolean("dnd_allow_messages", false)
+        set(value) = prefs.edit().putBoolean("dnd_allow_messages", value).apply()
+
+    var allowAlarms: Boolean
+        get() = prefs.getBoolean("dnd_allow_alarms", true)
+        set(value) = prefs.edit().putBoolean("dnd_allow_alarms", value).apply()
+
+    var allowReminders: Boolean
+        get() = prefs.getBoolean("dnd_allow_reminders", false)
+        set(value) = prefs.edit().putBoolean("dnd_allow_reminders", value).apply()
+
+    var allowEvents: Boolean
+        get() = prefs.getBoolean("dnd_allow_events", false)
+        set(value) = prefs.edit().putBoolean("dnd_allow_events", value).apply()
+
     fun getActivePreset(): PomodoroPreset {
         return if (isCustom) {
             PomodoroPreset(

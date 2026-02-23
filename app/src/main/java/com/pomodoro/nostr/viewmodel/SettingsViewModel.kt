@@ -59,7 +59,13 @@ class SettingsViewModel @Inject constructor(
             monthCount = sessionHistory.getMonthCount(),
             activityData = sessionHistory.getDailySessionCounts(26),
             level = levelCalculator.calculateCurrentLevel(),
-            sevenDayAverage = levelCalculator.calculateSevenDayAverage()
+            sevenDayAverage = levelCalculator.calculateSevenDayAverage(),
+            dndEnabled = timerPreferences.dndEnabled,
+            allowCalls = timerPreferences.allowCalls,
+            allowMessages = timerPreferences.allowMessages,
+            allowAlarms = timerPreferences.allowAlarms,
+            allowReminders = timerPreferences.allowReminders,
+            allowEvents = timerPreferences.allowEvents
         )
     }
 
@@ -119,6 +125,36 @@ class SettingsViewModel @Inject constructor(
         TimerService.initPreset(context, preset)
     }
 
+    fun setDndEnabled(enabled: Boolean) {
+        timerPreferences.dndEnabled = enabled
+        _uiState.value = _uiState.value.copy(dndEnabled = enabled)
+    }
+
+    fun setAllowCalls(allowed: Boolean) {
+        timerPreferences.allowCalls = allowed
+        _uiState.value = _uiState.value.copy(allowCalls = allowed)
+    }
+
+    fun setAllowMessages(allowed: Boolean) {
+        timerPreferences.allowMessages = allowed
+        _uiState.value = _uiState.value.copy(allowMessages = allowed)
+    }
+
+    fun setAllowAlarms(allowed: Boolean) {
+        timerPreferences.allowAlarms = allowed
+        _uiState.value = _uiState.value.copy(allowAlarms = allowed)
+    }
+
+    fun setAllowReminders(allowed: Boolean) {
+        timerPreferences.allowReminders = allowed
+        _uiState.value = _uiState.value.copy(allowReminders = allowed)
+    }
+
+    fun setAllowEvents(allowed: Boolean) {
+        timerPreferences.allowEvents = allowed
+        _uiState.value = _uiState.value.copy(allowEvents = allowed)
+    }
+
     fun logout() {
         nostrClient.disconnect()
         keyManager.clearKeys()
@@ -140,5 +176,11 @@ data class SettingsUiState(
     val monthCount: Int = 0,
     val activityData: Map<LocalDate, Int> = emptyMap(),
     val level: PomodoroLevel = PomodoroLevel.BEGINNER,
-    val sevenDayAverage: Double = 0.0
+    val sevenDayAverage: Double = 0.0,
+    val dndEnabled: Boolean = false,
+    val allowCalls: Boolean = true,
+    val allowMessages: Boolean = false,
+    val allowAlarms: Boolean = true,
+    val allowReminders: Boolean = false,
+    val allowEvents: Boolean = false
 )

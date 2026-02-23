@@ -1,6 +1,8 @@
 package com.pomodoro.nostr.timer
 
 import android.app.Notification
+import android.app.NotificationManager
+import android.app.NotificationManager.Policy
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
@@ -27,12 +29,16 @@ class TimerService : Service() {
     private var tickJob: Job? = null
     private lateinit var sessionHistory: SessionHistory
     private lateinit var levelCalculator: LevelCalculator
+    private lateinit var timerPreferences: TimerPreferences
+    private var previousInterruptionFilter: Int = NotificationManager.INTERRUPTION_FILTER_ALL
+    private var dndActivatedByUs = false
 
     override fun onCreate() {
         super.onCreate()
         instance = this
         sessionHistory = SessionHistory(applicationContext)
         levelCalculator = LevelCalculator(applicationContext)
+        timerPreferences = TimerPreferences(applicationContext)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -49,6 +55,7 @@ class TimerService : Service() {
 
     override fun onDestroy() {
         tickJob?.cancel()
+        restoreDnd()
         instance = null
         super.onDestroy()
     }
@@ -70,6 +77,7 @@ class TimerService : Service() {
         }
 
         startForeground(NOTIFICATION_ID, buildNotification())
+        enableDndIfConfigured()
         startTicking()
     }
 
@@ -81,6 +89,7 @@ class TimerService : Service() {
 
     private fun resetTimer() {
         tickJob?.cancel()
+        restoreDnd()
         _timerState.value = TimerState(currentPreset = _timerState.value.currentPreset)
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
@@ -241,6 +250,43 @@ class TimerService : Service() {
             this, action.hashCode(), intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+    }
+
+    private fun enableDndIfConfigured() {
+        if (!timerPreferences.dndEnabled) return
+        try {
+            val nm = getSystemService(NotificationManager::class.java)
+            if (!nm.isNotificationPolicyAccessGranted) return
+
+            previousInterruptionFilter = nm.currentInterruptionFilter
+
+            var priorityCategories = 0
+            if (timerPreferences.allowCalls) priorityCategories = priorityCategories or Policy.PRIORITY_CATEGORY_CALLS
+            if (timerPreferences.allowMessages) priorityCategories = priorityCategories or Policy.PRIORITY_CATEGORY_MESSAGES
+            if (timerPreferences.allowAlarms) priorityCategories = priorityCategories or Policy.PRIORITY_CATEGORY_ALARMS
+            if (timerPreferences.allowReminders) priorityCategories = priorityCategories or Policy.PRIORITY_CATEGORY_REMINDERS
+            if (timerPreferences.allowEvents) priorityCategories = priorityCategories or Policy.PRIORITY_CATEGORY_EVENTS
+
+            val policy = Policy(
+                priorityCategories,
+                Policy.PRIORITY_SENDERS_ANY,
+                Policy.PRIORITY_SENDERS_ANY
+            )
+            nm.setNotificationPolicy(policy)
+            nm.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_PRIORITY)
+            dndActivatedByUs = true
+        } catch (_: Exception) { }
+    }
+
+    private fun restoreDnd() {
+        if (!dndActivatedByUs) return
+        try {
+            val nm = getSystemService(NotificationManager::class.java)
+            if (nm.isNotificationPolicyAccessGranted) {
+                nm.setInterruptionFilter(previousInterruptionFilter)
+            }
+        } catch (_: Exception) { }
+        dndActivatedByUs = false
     }
 
     companion object {

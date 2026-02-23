@@ -38,7 +38,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Timer", "Profile", "Contacts")
+    val tabs = listOf("Timer", "Profile", "Contacts", "Notify")
 
     // Refresh stats when settings screen appears
     LaunchedEffect(Unit) {
@@ -107,6 +107,7 @@ fun SettingsScreen(
                 0 -> TimerSettingsTab(viewModel = viewModel, onLogout = onLogout)
                 1 -> ProfileTab()
                 2 -> ContactsTab()
+                3 -> NotificationsTab(viewModel = viewModel)
             }
         }
     }
